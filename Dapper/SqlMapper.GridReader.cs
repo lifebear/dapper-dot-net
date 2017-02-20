@@ -369,7 +369,7 @@ namespace Dapper
             {
                 if (reader != null)
                 {
-                    if (!reader.IsClosed) Command?.Cancel();
+                    //if (!reader.IsClosed) Command?.Cancel();
                     reader.Dispose();
                     reader = null;
                 }
