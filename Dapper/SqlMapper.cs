@@ -221,23 +221,9 @@ namespace Dapper
         private static void ResetTypeHandlers(bool clone)
         {
             typeHandlers = new Dictionary<Type, ITypeHandler>();
-#if !NETSTANDARD1_3
-            AddTypeHandlerImpl(typeof(DataTable), new DataTableHandler(), clone);
-#endif
-            try
-            {
-                AddSqlDataRecordsTypeHandler(clone);
-            }
-            catch { /* https://github.com/StackExchange/dapper-dot-net/issues/424 */ }
             AddTypeHandlerImpl(typeof(XmlDocument), new XmlDocumentHandler(), clone);
             AddTypeHandlerImpl(typeof(XDocument), new XDocumentHandler(), clone);
             AddTypeHandlerImpl(typeof(XElement), new XElementHandler(), clone);
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static void AddSqlDataRecordsTypeHandler(bool clone)
-        {
-            AddTypeHandlerImpl(typeof(IEnumerable<Microsoft.SqlServer.Server.SqlDataRecord>), new SqlDataRecordHandler(), clone);
         }
 
         /// <summary>
@@ -3654,14 +3640,6 @@ namespace Dapper
         private const string DataTableTypeNameKey = "dapper:TypeName";
 
         /// <summary>
-        /// Used to pass a DataTable as a <see cref="TableValuedParameter"/>.
-        /// </summary>
-        /// <param name="table">The <see cref="DataTable"/> to create this parameter for.</param>
-        /// <param name="typeName">The name of the type this parameter is for.</param>
-        public static ICustomQueryParameter AsTableValuedParameter(this DataTable table, string typeName = null) =>
-            new TableValuedParameter(table, typeName);
-
-        /// <summary>
         /// Associate a DataTable with a type name.
         /// </summary>
         /// <param name="table">The <see cref="DataTable"/> that does with the <paramref name="typeName"/>.</param>
@@ -3684,14 +3662,6 @@ namespace Dapper
         public static string GetTypeName(this DataTable table) =>
             table?.ExtendedProperties[DataTableTypeNameKey] as string;
 #endif
-
-        /// <summary>
-        /// Used to pass a IEnumerable&lt;SqlDataRecord&gt; as a TableValuedParameter.
-        /// </summary>
-        /// <param name="list">The list of records to convert to TVPs.</param>
-        /// <param name="typeName">The sql parameter type name.</param>
-        public static ICustomQueryParameter AsTableValuedParameter(this IEnumerable<Microsoft.SqlServer.Server.SqlDataRecord> list, string typeName = null) =>
-            new SqlDataRecordListTVPParameter(list, typeName);
 
         // one per thread
         [ThreadStatic]
