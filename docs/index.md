@@ -4,8 +4,6 @@
 
 A brief guide is available [on github](https://github.com/StackExchange/dapper-dot-net/blob/master/Readme.md)
 
-More examples coming soon on Stack Overflow docs.
-
 Questions on Stack Overflow should be tagged [`dapper`](http://stackoverflow.com/questions/tagged/dapper)
 
 ## Installation
@@ -21,6 +19,11 @@ or
 Note: to get the latest pre-release build, add ` -Pre` to the end of the command.
 
 ## Release  Notes
+
+### 1.50.4
+
+- Added back missing .NET Standard functionality (restored in `netstandard2.0`)
+- Bumped `SqlClient` dependency to 4.4.0 (to help propagate the newer client)
 
 ### 1.50.2
 

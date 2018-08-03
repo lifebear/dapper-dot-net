@@ -1,9 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Data;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace Dapper.Tests
@@ -18,7 +15,7 @@ namespace Dapper.Tests
             connection.Execute("create proc #Issue261 @c decimal(10,5) OUTPUT as begin set @c=11.884 end");
             connection.Execute("#Issue261", parameters, commandType: CommandType.StoredProcedure);
             var c = parameters.Get<Decimal>("c");
-            c.IsEqualTo(11.884M);
+            Assert.Equal(11.884M, c);
         }
 
         [Fact]
@@ -64,7 +61,7 @@ namespace Dapper.Tests
                 cmd.Parameters.Add(c);
                 cmd.ExecuteNonQuery();
                 decimal value = (decimal)c.Value;
-                value.IsEqualTo(11.884M);
+                Assert.Equal(11.884M, value);
             }
         }
 
@@ -72,7 +69,7 @@ namespace Dapper.Tests
         public void BasicDecimals()
         {
             var c = connection.Query<decimal>("select @c", new { c = 11.884M }).Single();
-            c.IsEqualTo(11.884M);
+            Assert.Equal(11.884M, c);
         }
 
         [Fact]
@@ -80,10 +77,10 @@ namespace Dapper.Tests
         {
             var row = connection.Query<HasDoubleDecimal>(
                 "select cast(1 as float) as A, cast(2 as float) as B, cast(3 as decimal) as C, cast(4 as decimal) as D").Single();
-            row.A.Equals(1.0);
-            row.B.Equals(2.0);
-            row.C.Equals(3.0M);
-            row.D.Equals(4.0M);
+            Assert.Equal(1.0, row.A);
+            Assert.Equal(2.0, row.B);
+            Assert.Equal(3.0M, row.C);
+            Assert.Equal(4.0M, row.D);
         }
 
         [Fact]
@@ -91,10 +88,10 @@ namespace Dapper.Tests
         {
             var row = connection.Query<HasDoubleDecimal>(
                 "select cast(1 as decimal) as A, cast(2 as decimal) as B, cast(3 as float) as C, cast(4 as float) as D").Single();
-            row.A.Equals(1.0);
-            row.B.Equals(2.0);
-            row.C.Equals(3.0M);
-            row.D.Equals(4.0M);
+            Assert.Equal(1.0, row.A);
+            Assert.Equal(2.0, row.B);
+            Assert.Equal(3.0M, row.C);
+            Assert.Equal(4.0M, row.D);
         }
 
         [Fact]
@@ -102,10 +99,10 @@ namespace Dapper.Tests
         {
             var row = connection.Query<HasDoubleDecimal>(
                 "select cast(null as decimal) as A, cast(null as decimal) as B, cast(null as float) as C, cast(null as float) as D").Single();
-            row.A.Equals(0.0);
-            row.B.IsNull();
-            row.C.Equals(0.0M);
-            row.D.IsNull();
+            Assert.Equal(0.0, row.A);
+            Assert.Null(row.B);
+            Assert.Equal(0.0M, row.C);
+            Assert.Null(row.D);
         }
 
         private class HasDoubleDecimal

@@ -1,4 +1,4 @@
-using BenchmarkDotNet.Attributes;
+﻿using BenchmarkDotNet.Attributes;
 using Dapper.Contrib.Extensions;
 using System.Linq;
 
@@ -6,7 +6,7 @@ namespace Dapper.Tests.Performance
 {
     public class DapperBenchmarks : BenchmarkBase
     {
-        [Setup]
+        [GlobalSetup]
         public void Setup()
         {
             BaseSetup();
@@ -18,7 +18,8 @@ namespace Dapper.Tests.Performance
             Step();
             return _connection.Query<Post>("select * from Posts where Id = @Id", new { Id = i }, buffered: true).First();
         }
-        [Benchmark(Description = "Query<dyanmic> (buffered)")]
+
+        [Benchmark(Description = "Query<dynamic> (buffered)")]
         public dynamic QueryBufferedDynamic()
         {
             Step();
@@ -31,7 +32,8 @@ namespace Dapper.Tests.Performance
             Step();
             return _connection.Query<Post>("select * from Posts where Id = @Id", new { Id = i }, buffered: false).First();
         }
-        [Benchmark(Description = "Query<dyanmic> (unbuffered)")]
+
+        [Benchmark(Description = "Query<dynamic> (unbuffered)")]
         public dynamic QueryUnbufferedDynamic()
         {
             Step();
@@ -44,13 +46,14 @@ namespace Dapper.Tests.Performance
             Step();
             return _connection.QueryFirstOrDefault<Post>("select * from Posts where Id = @Id", new { Id = i });
         }
-        [Benchmark(Description = "QueryFirstOrDefault<dyanmic>")]
+
+        [Benchmark(Description = "QueryFirstOrDefault<dynamic>")]
         public dynamic QueryFirstOrDefaultDynamic()
         {
             Step();
             return _connection.QueryFirstOrDefault("select * from Posts where Id = @Id", new { Id = i }).First();
         }
-        
+
         [Benchmark(Description = "Contrib Get<T>")]
         public Post ContribGet()
         {

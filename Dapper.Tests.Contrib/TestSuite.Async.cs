@@ -5,11 +5,84 @@ using System.Threading.Tasks;
 
 using Dapper.Contrib.Extensions;
 using FactAttribute = Dapper.Tests.Contrib.SkippableFactAttribute;
+using Xunit;
 
 namespace Dapper.Tests.Contrib
 {
     public abstract partial class TestSuite
     {
+        [Fact]
+        public async Task TypeWithGenericParameterCanBeInsertedAsync()
+        {
+            using (var connection = GetOpenConnection())
+            {
+                await connection.DeleteAllAsync<GenericType<string>>();
+                var objectToInsert = new GenericType<string>
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    Name = "something"
+                };
+                await connection.InsertAsync(objectToInsert);
+
+                Assert.Single(connection.GetAll<GenericType<string>>());
+
+                var objectsToInsert = new List<GenericType<string>>
+                {
+                    new GenericType<string>
+                    {
+                        Id = Guid.NewGuid().ToString(),
+                        Name = "1",
+                    },
+                    new GenericType<string>
+                    {
+                        Id = Guid.NewGuid().ToString(),
+                        Name = "2",
+                    }
+                };
+
+                await connection.InsertAsync(objectsToInsert);
+                var list = connection.GetAll<GenericType<string>>();
+                Assert.Equal(3, list.Count());
+            }
+        }
+
+        [Fact]
+        public async Task TypeWithGenericParameterCanBeUpdatedAsync()
+        {
+            using (var connection = GetOpenConnection())
+            {
+                var objectToInsert = new GenericType<string>
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    Name = "something"
+                };
+                await connection.InsertAsync(objectToInsert);
+
+                objectToInsert.Name = "somethingelse";
+                await connection.UpdateAsync(objectToInsert);
+
+                var updatedObject = connection.Get<GenericType<string>>(objectToInsert.Id);
+                Assert.Equal(objectToInsert.Name, updatedObject.Name);
+            }
+        }
+
+        [Fact]
+        public async Task TypeWithGenericParameterCanBeDeletedAsync()
+        {
+            using (var connection = GetOpenConnection())
+            {
+                var objectToInsert = new GenericType<string>
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    Name = "something"
+                };
+                await connection.InsertAsync(objectToInsert);
+
+                bool deleted = await connection.DeleteAsync(objectToInsert);
+                Assert.True(deleted);
+            }
+        }
+
         /// <summary>
         /// Tests for issue #351 
         /// </summary>
@@ -23,32 +96,32 @@ namespace Dapper.Tests.Contrib
                 var originalxCount = (await connection.QueryAsync<int>("Select Count(*) From ObjectX").ConfigureAwait(false)).First();
                 await connection.InsertAsync(o1).ConfigureAwait(false);
                 var list1 = (await connection.QueryAsync<ObjectX>("select * from ObjectX").ConfigureAwait(false)).ToList();
-                list1.Count.IsEqualTo(originalxCount + 1);
+                Assert.Equal(list1.Count, originalxCount + 1);
                 o1 = await connection.GetAsync<ObjectX>(guid).ConfigureAwait(false);
-                o1.ObjectXId.IsEqualTo(guid);
+                Assert.Equal(o1.ObjectXId, guid);
                 o1.Name = "Bar";
                 await connection.UpdateAsync(o1).ConfigureAwait(false);
                 o1 = await connection.GetAsync<ObjectX>(guid).ConfigureAwait(false);
-                o1.Name.IsEqualTo("Bar");
+                Assert.Equal("Bar", o1.Name);
                 await connection.DeleteAsync(o1).ConfigureAwait(false);
                 o1 = await connection.GetAsync<ObjectX>(guid).ConfigureAwait(false);
-                o1.IsNull();
+                Assert.Null(o1);
 
                 const int id = 42;
                 var o2 = new ObjectY { ObjectYId = id, Name = "Foo" };
                 var originalyCount = connection.Query<int>("Select Count(*) From ObjectY").First();
                 await connection.InsertAsync(o2).ConfigureAwait(false);
                 var list2 = (await connection.QueryAsync<ObjectY>("select * from ObjectY").ConfigureAwait(false)).ToList();
-                list2.Count.IsEqualTo(originalyCount+1);
+                Assert.Equal(list2.Count, originalyCount + 1);
                 o2 = await connection.GetAsync<ObjectY>(id).ConfigureAwait(false);
-                o2.ObjectYId.IsEqualTo(id);
+                Assert.Equal(o2.ObjectYId, id);
                 o2.Name = "Bar";
                 await connection.UpdateAsync(o2).ConfigureAwait(false);
                 o2 = await connection.GetAsync<ObjectY>(id).ConfigureAwait(false);
-                o2.Name.IsEqualTo("Bar");
+                Assert.Equal("Bar", o2.Name);
                 await connection.DeleteAsync(o2).ConfigureAwait(false);
                 o2 = await connection.GetAsync<ObjectY>(id).ConfigureAwait(false);
-                o2.IsNull();
+                Assert.Null(o2);
             }
         }
 
@@ -60,12 +133,12 @@ namespace Dapper.Tests.Contrib
                 // tests against "Automobiles" table (Table attribute)
                 var id = await connection.InsertAsync(new Car { Name = "VolvoAsync" }).ConfigureAwait(false);
                 var car = await connection.GetAsync<Car>(id).ConfigureAwait(false);
-                car.IsNotNull();
-                car.Name.IsEqualTo("VolvoAsync");
-                (await connection.UpdateAsync(new Car { Id = id, Name = "SaabAsync" }).ConfigureAwait(false)).IsEqualTo(true);
-                (await connection.GetAsync<Car>(id).ConfigureAwait(false)).Name.IsEqualTo("SaabAsync");
-                (await connection.DeleteAsync(new Car { Id = id }).ConfigureAwait(false)).IsEqualTo(true);
-                (await connection.GetAsync<Car>(id).ConfigureAwait(false)).IsNull();
+                Assert.NotNull(car);
+                Assert.Equal("VolvoAsync", car.Name);
+                Assert.True(await connection.UpdateAsync(new Car { Id = id, Name = "SaabAsync" }).ConfigureAwait(false));
+                Assert.Equal("SaabAsync", (await connection.GetAsync<Car>(id).ConfigureAwait(false)).Name);
+                Assert.True(await connection.DeleteAsync(new Car { Id = id }).ConfigureAwait(false));
+                Assert.Null(await connection.GetAsync<Car>(id).ConfigureAwait(false));
             }
         }
 
@@ -76,8 +149,8 @@ namespace Dapper.Tests.Contrib
             {
                 var id = await connection.InsertAsync(new User { Name = "Adama", Age = 10 }).ConfigureAwait(false);
                 var user = await connection.GetAsync<User>(id).ConfigureAwait(false);
-                user.Id.IsEqualTo(id);
-                user.Name.IsEqualTo("Adama");
+                Assert.Equal(id, user.Id);
+                Assert.Equal("Adama", user.Name);
                 await connection.DeleteAsync(user).ConfigureAwait(false);
             }
         }
@@ -87,7 +160,7 @@ namespace Dapper.Tests.Contrib
         {
             using (var connection = GetOpenConnection())
             {
-                (await connection.GetAsync<User>(30).ConfigureAwait(false)).IsNull();
+                Assert.Null(await connection.GetAsync<User>(30).ConfigureAwait(false));
 
                 var originalCount = (await connection.QueryAsync<int>("select Count(*) from Users").ConfigureAwait(false)).First();
 
@@ -95,29 +168,29 @@ namespace Dapper.Tests.Contrib
 
                 //get a user with "isdirty" tracking
                 var user = await connection.GetAsync<IUser>(id).ConfigureAwait(false);
-                user.Name.IsEqualTo("Adam");
-                (await connection.UpdateAsync(user).ConfigureAwait(false)).IsEqualTo(false); //returns false if not updated, based on tracking
+                Assert.Equal("Adam", user.Name);
+                Assert.False(await connection.UpdateAsync(user).ConfigureAwait(false)); //returns false if not updated, based on tracking
                 user.Name = "Bob";
-                (await connection.UpdateAsync(user).ConfigureAwait(false)).IsEqualTo(true); //returns true if updated, based on tracking
+                Assert.True(await connection.UpdateAsync(user).ConfigureAwait(false)); //returns true if updated, based on tracking
                 user = await connection.GetAsync<IUser>(id).ConfigureAwait(false);
-                user.Name.IsEqualTo("Bob");
+                Assert.Equal("Bob", user.Name);
 
                 //get a user with no tracking
                 var notrackedUser = await connection.GetAsync<User>(id).ConfigureAwait(false);
-                notrackedUser.Name.IsEqualTo("Bob");
-                (await connection.UpdateAsync(notrackedUser).ConfigureAwait(false)).IsEqualTo(true);
+                Assert.Equal("Bob", notrackedUser.Name);
+                Assert.True(await connection.UpdateAsync(notrackedUser).ConfigureAwait(false));
                 //returns true, even though user was not changed
                 notrackedUser.Name = "Cecil";
-                (await connection.UpdateAsync(notrackedUser).ConfigureAwait(false)).IsEqualTo(true);
-                (await connection.GetAsync<User>(id).ConfigureAwait(false)).Name.IsEqualTo("Cecil");
+                Assert.True(await connection.UpdateAsync(notrackedUser).ConfigureAwait(false));
+                Assert.Equal("Cecil", (await connection.GetAsync<User>(id).ConfigureAwait(false)).Name);
 
-                (await connection.QueryAsync<User>("select * from Users").ConfigureAwait(false)).Count().IsEqualTo(originalCount+1);
-                (await connection.DeleteAsync(user).ConfigureAwait(false)).IsEqualTo(true);
-                (await connection.QueryAsync<User>("select * from Users").ConfigureAwait(false)).Count().IsEqualTo(originalCount);
+                Assert.Equal((await connection.QueryAsync<User>("select * from Users").ConfigureAwait(false)).Count(), originalCount + 1);
+                Assert.True(await connection.DeleteAsync(user).ConfigureAwait(false));
+                Assert.Equal((await connection.QueryAsync<User>("select * from Users").ConfigureAwait(false)).Count(), originalCount);
 
-                (await connection.UpdateAsync(notrackedUser).ConfigureAwait(false)).IsEqualTo(false); //returns false, user not found
+                Assert.False(await connection.UpdateAsync(notrackedUser).ConfigureAwait(false)); //returns false, user not found
 
-                (await connection.InsertAsync(new User {Name = "Adam", Age = 10}).ConfigureAwait(false)).IsMoreThan(originalCount + 1);
+                Assert.True(await connection.InsertAsync(new User { Name = "Adam", Age = 10 }).ConfigureAwait(false) > originalCount + 1);
             }
         }
 
@@ -128,10 +201,10 @@ namespace Dapper.Tests.Contrib
             {
                 await connection.DeleteAllAsync<User>().ConfigureAwait(false);
 
-                (await connection.GetAsync<IUser>(3).ConfigureAwait(false)).IsNull();
+                Assert.Null(await connection.GetAsync<IUser>(3).ConfigureAwait(false));
                 var user = new User { Name = "Adamb", Age = 10 };
                 var id = await connection.InsertAsync(user).ConfigureAwait(false);
-                user.Id.IsEqualTo(id);
+                Assert.Equal(user.Id, id);
             }
         }
 
@@ -190,6 +263,12 @@ namespace Dapper.Tests.Contrib
         }
 
         [Fact]
+        public async Task InsertEnumerableAsync()
+        {
+            await InsertHelperAsync(src => src.AsEnumerable()).ConfigureAwait(false);
+        }
+
+        [Fact]
         public async Task InsertArrayAsync()
         {
             await InsertHelperAsync(src => src.ToArray()).ConfigureAwait(false);
@@ -215,10 +294,16 @@ namespace Dapper.Tests.Contrib
                 await connection.DeleteAllAsync<User>().ConfigureAwait(false);
 
                 var total = await connection.InsertAsync(helper(users)).ConfigureAwait(false);
-                total.IsEqualTo(numberOfEntities);
+                Assert.Equal(total, numberOfEntities);
                 users = connection.Query<User>("select * from Users").ToList();
-                users.Count.IsEqualTo(numberOfEntities);
+                Assert.Equal(users.Count, numberOfEntities);
             }
+        }
+
+        [Fact]
+        public async Task UpdateEnumerableAsync()
+        {
+            await UpdateHelperAsync(src => src.AsEnumerable()).ConfigureAwait(false);
         }
 
         [Fact]
@@ -247,17 +332,23 @@ namespace Dapper.Tests.Contrib
                 await connection.DeleteAllAsync<User>().ConfigureAwait(false);
 
                 var total = await connection.InsertAsync(helper(users)).ConfigureAwait(false);
-                total.IsEqualTo(numberOfEntities);
+                Assert.Equal(total, numberOfEntities);
                 users = connection.Query<User>("select * from Users").ToList();
-                users.Count.IsEqualTo(numberOfEntities);
+                Assert.Equal(users.Count, numberOfEntities);
                 foreach (var user in users)
                 {
                     user.Name += " updated";
                 }
                 await connection.UpdateAsync(helper(users)).ConfigureAwait(false);
                 var name = connection.Query<User>("select * from Users").First().Name;
-                name.Contains("updated").IsTrue();
+                Assert.Contains("updated", name);
             }
+        }
+
+        [Fact]
+        public async Task DeleteEnumerableAsync()
+        {
+            await DeleteHelperAsync(src => src.AsEnumerable()).ConfigureAwait(false);
         }
 
         [Fact]
@@ -286,14 +377,14 @@ namespace Dapper.Tests.Contrib
                 await connection.DeleteAllAsync<User>().ConfigureAwait(false);
 
                 var total = await connection.InsertAsync(helper(users)).ConfigureAwait(false);
-                total.IsEqualTo(numberOfEntities);
+                Assert.Equal(total, numberOfEntities);
                 users = connection.Query<User>("select * from Users").ToList();
-                users.Count.IsEqualTo(numberOfEntities);
+                Assert.Equal(users.Count, numberOfEntities);
 
                 var usersToDelete = users.Take(10).ToList();
                 await connection.DeleteAsync(helper(usersToDelete)).ConfigureAwait(false);
                 users = connection.Query<User>("select * from Users").ToList();
-                users.Count.IsEqualTo(numberOfEntities - 10);
+                Assert.Equal(users.Count, numberOfEntities - 10);
             }
         }
 
@@ -311,11 +402,35 @@ namespace Dapper.Tests.Contrib
                 await connection.DeleteAllAsync<User>().ConfigureAwait(false);
 
                 var total = await connection.InsertAsync(users).ConfigureAwait(false);
-                total.IsEqualTo(numberOfEntities);
+                Assert.Equal(total, numberOfEntities);
                 users = (List<User>)await connection.GetAllAsync<User>().ConfigureAwait(false);
-                users.Count.IsEqualTo(numberOfEntities);
+                Assert.Equal(users.Count, numberOfEntities);
                 var iusers = await connection.GetAllAsync<IUser>().ConfigureAwait(false);
-                iusers.ToList().Count.IsEqualTo(numberOfEntities);
+                Assert.Equal(iusers.ToList().Count, numberOfEntities);
+            }
+        }
+
+        /// <summary>
+        /// Test for issue #933
+        /// </summary>
+        [Fact]
+        public async void GetAsyncAndGetAllAsyncWithNullableValues()
+        {
+            using (var connection = GetOpenConnection())
+            {
+                var id1 = connection.Insert(new NullableDate { DateValue = new DateTime(2011, 07, 14) });
+                var id2 = connection.Insert(new NullableDate { DateValue = null });
+
+                var value1 = await connection.GetAsync<INullableDate>(id1).ConfigureAwait(false);
+                Assert.Equal(new DateTime(2011, 07, 14), value1.DateValue.Value);
+
+                var value2 = await connection.GetAsync<INullableDate>(id2).ConfigureAwait(false);
+                Assert.True(value2.DateValue == null);
+
+                var value3 = await connection.GetAllAsync<INullableDate>().ConfigureAwait(false);
+                var valuesList = value3.ToList();
+                Assert.Equal(new DateTime(2011, 07, 14), valuesList[0].DateValue.Value);
+                Assert.True(valuesList[1].DateValue == null);
             }
         }
 
@@ -328,7 +443,7 @@ namespace Dapper.Tests.Contrib
                 var id = await connection.InsertAsync(new Result { Name = "Adam", Order = 1 }).ConfigureAwait(false);
 
                 var result = await connection.GetAsync<Result>(id).ConfigureAwait(false);
-                result.Order.IsEqualTo(1);
+                Assert.Equal(1, result.Order);
             }
         }
 
@@ -342,8 +457,8 @@ namespace Dapper.Tests.Contrib
                 var id1 = await connection.InsertAsync(new User { Name = "Alice", Age = 32 }).ConfigureAwait(false);
                 var id2 = await connection.InsertAsync(new User { Name = "Bob", Age = 33 }).ConfigureAwait(false);
                 await connection.DeleteAllAsync<User>().ConfigureAwait(false);
-                (await connection.GetAsync<User>(id1).ConfigureAwait(false)).IsNull();
-                (await connection.GetAsync<User>(id2).ConfigureAwait(false)).IsNull();
+                Assert.Null(await connection.GetAsync<User>(id1).ConfigureAwait(false));
+                Assert.Null(await connection.GetAsync<User>(id2).ConfigureAwait(false));
             }
         }
     }
