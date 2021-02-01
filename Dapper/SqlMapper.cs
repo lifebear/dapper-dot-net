@@ -1550,21 +1550,15 @@ namespace Dapper
             }
         }
 
-        private static T ChangeType<T>(object obj)
-        {
-            if (obj == null || obj is T) return (T)obj;
-            return (T)Convert.ChangeType(obj, Nullable.GetUnderlyingType(typeof(T)) ?? typeof(T), CultureInfo.InvariantCulture);
-        }
-
         private static Func<IDataReader, TReturn> GenerateMapper<TFirst, TSecond, TThird, TFourth, TFifth, TSixth, TSeventh, TReturn>(Func<IDataReader, object> deserializer, Func<IDataReader, object>[] otherDeserializers, object map)
             => otherDeserializers.Length switch
         {
-            1 => r => ((Func<TFirst, TSecond, TReturn>)map)(ChangeType<TFirst>(deserializer(r)), ChangeType<TSecond>(otherDeserializers[0](r))),
-            2 => r => ((Func<TFirst, TSecond, TThird, TReturn>)map)(ChangeType<TFirst>(deserializer(r)), ChangeType<TSecond>(otherDeserializers[0](r)), ChangeType<TThird>(otherDeserializers[1](r))),
-            3 => r => ((Func<TFirst, TSecond, TThird, TFourth, TReturn>)map)(ChangeType<TFirst>(deserializer(r)), ChangeType<TSecond>(otherDeserializers[0](r)), ChangeType<TThird>(otherDeserializers[1](r)), ChangeType<TFourth>(otherDeserializers[2](r))),
-            4 => r => ((Func<TFirst, TSecond, TThird, TFourth, TFifth, TReturn>)map)(ChangeType<TFirst>(deserializer(r)), ChangeType<TSecond>(otherDeserializers[0](r)), ChangeType<TThird>(otherDeserializers[1](r)), ChangeType<TFourth>(otherDeserializers[2](r)), ChangeType<TFifth>(otherDeserializers[3](r))),
-            5 => r => ((Func<TFirst, TSecond, TThird, TFourth, TFifth, TSixth, TReturn>)map)(ChangeType<TFirst>(deserializer(r)), ChangeType<TSecond>(otherDeserializers[0](r)), ChangeType<TThird>(otherDeserializers[1](r)), ChangeType<TFourth>(otherDeserializers[2](r)), ChangeType<TFifth>(otherDeserializers[3](r)), ChangeType<TSixth>(otherDeserializers[4](r))),
-            6 => r => ((Func<TFirst, TSecond, TThird, TFourth, TFifth, TSixth, TSeventh, TReturn>)map)(ChangeType<TFirst>(deserializer(r)), ChangeType<TSecond>(otherDeserializers[0](r)), ChangeType<TThird>(otherDeserializers[1](r)), ChangeType<TFourth>(otherDeserializers[2](r)), ChangeType<TFifth>(otherDeserializers[3](r)), ChangeType<TSixth>(otherDeserializers[4](r)), ChangeType<TSeventh>(otherDeserializers[5](r))),
+            1 => r => ((Func<TFirst, TSecond, TReturn>)map)(GetValue<TFirst>(r, typeof(TFirst), deserializer(r)), GetValue<TSecond>(r, typeof(TSecond), otherDeserializers[0](r))),
+            2 => r => ((Func<TFirst, TSecond, TThird, TReturn>)map)(GetValue<TFirst>(r, typeof(TFirst), deserializer(r)), GetValue<TSecond>(r, typeof(TSecond), otherDeserializers[0](r)), GetValue<TThird>(r, typeof(TThird), otherDeserializers[1](r))),
+            3 => r => ((Func<TFirst, TSecond, TThird, TFourth, TReturn>)map)(GetValue<TFirst>(r, typeof(TFirst), deserializer(r)), GetValue<TSecond>(r, typeof(TSecond), otherDeserializers[0](r)), GetValue<TThird>(r, typeof(TThird), otherDeserializers[1](r)), GetValue<TFourth>(r, typeof(TFourth), otherDeserializers[2](r))),
+            4 => r => ((Func<TFirst, TSecond, TThird, TFourth, TFifth, TReturn>)map)(GetValue<TFirst>(r, typeof(TFirst), deserializer(r)), GetValue<TSecond>(r, typeof(TSecond), otherDeserializers[0](r)), GetValue<TThird>(r, typeof(TThird), otherDeserializers[1](r)), GetValue<TFourth>(r, typeof(TFourth), otherDeserializers[2](r)), GetValue<TFifth>(r, typeof(TFifth), otherDeserializers[3](r))),
+            5 => r => ((Func<TFirst, TSecond, TThird, TFourth, TFifth, TSixth, TReturn>)map)(GetValue<TFirst>(r, typeof(TFirst), deserializer(r)), GetValue<TSecond>(r, typeof(TSecond), otherDeserializers[0](r)), GetValue<TThird>(r, typeof(TThird), otherDeserializers[1](r)), GetValue<TFourth>(r, typeof(TFourth), otherDeserializers[2](r)), GetValue<TFifth>(r, typeof(TFifth), otherDeserializers[3](r)), GetValue<TSixth>(r, typeof(TSixth), otherDeserializers[4](r))),
+            6 => r => ((Func<TFirst, TSecond, TThird, TFourth, TFifth, TSixth, TSeventh, TReturn>)map)(GetValue<TFirst>(r, typeof(TFirst), deserializer(r)), GetValue<TSecond>(r, typeof(TSecond), otherDeserializers[0](r)), GetValue<TThird>(r, typeof(TThird), otherDeserializers[1](r)), GetValue<TFourth>(r, typeof(TFourth), otherDeserializers[2](r)), GetValue<TFifth>(r, typeof(TFifth), otherDeserializers[3](r)), GetValue<TSixth>(r, typeof(TSixth), otherDeserializers[4](r)), GetValue<TSeventh>(r, typeof(TSeventh), otherDeserializers[5](r))),
             _ => throw new NotSupportedException(),
         };
 
