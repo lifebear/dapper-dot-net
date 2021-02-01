@@ -3709,6 +3709,14 @@ namespace Dapper
         private const string DataTableTypeNameKey = "dapper:TypeName";
 
         /// <summary>
+        /// Used to pass a DataTable as a <see cref="TableValuedParameter"/>.
+        /// </summary>
+        /// <param name="table">The <see cref="DataTable"/> to create this parameter for.</param>
+        /// <param name="typeName">The name of the type this parameter is for.</param>
+        public static ICustomQueryParameter AsTableValuedParameter(this DataTable table, string typeName = null) =>
+            new TableValuedParameter(table, typeName);
+
+        /// <summary>
         /// Associate a DataTable with a type name.
         /// </summary>
         /// <param name="table">The <see cref="DataTable"/> that does with the <paramref name="typeName"/>.</param>
